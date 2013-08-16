@@ -101,6 +101,15 @@ DTEND:20130314T201545Z
 RRULE:FREQ=WEEKLY;BYDAY=TH;UNTIL=20130531T100000Z
 ICAL
 
+  ical_string_woth_multiple_exdates = <<-ICAL
+DTSTART;TZID=America/Denver:20130731T143000
+DTEND;TZID=America/Denver:20130731T153000
+RRULE:FREQ=WEEKLY;UNTIL=20140730T203000Z;BYDAY=MO,WE,FR
+EXDATE;TZID=America/Denver:20130823T143000
+EXDATE;TZID=America/Denver:20130812T143000
+EXDATE;TZID=America/Denver:20130807T143000
+ICAL
+
 
   def sorted_ical(ical)
     ical.split(/\n/).sort.map { |field|
@@ -153,17 +162,6 @@ ICAL
 
       schedule = IceCube::Schedule.new(start_time)
       schedule.add_recurrence_rule(IceCube::Rule.daily(4).count(10))
-
-      ical = schedule.to_ical
-      sorted_ical(IceCube::Schedule.from_ical(ical).to_ical).should eq(sorted_ical(ical))
-    end
-
-    it 'handles exceptions' do
-      start_time = Time.now
-
-      schedule = IceCube::Schedule.new(start_time)
-      schedule.add_recurrence_rule(IceCube::Rule.daily)
-      schedule.add_exception_time(Time.now + 2.days)
 
       ical = schedule.to_ical
       sorted_ical(IceCube::Schedule.from_ical(ical).to_ical).should eq(sorted_ical(ical))
@@ -344,6 +342,25 @@ ICAL
 
       ical = schedule.to_ical
       sorted_ical(IceCube::Schedule.from_ical(ical).to_ical).should eq(sorted_ical(ical))
+    end
+  end
+
+
+  context "exceptions" do
+    it 'handles single EXDATE lines' do
+      start_time = Time.now
+
+      schedule = IceCube::Schedule.new(start_time)
+      schedule.add_recurrence_rule(IceCube::Rule.daily)
+      schedule.add_exception_time(Time.now + 2.days)
+
+      ical = schedule.to_ical
+      sorted_ical(IceCube::Schedule.from_ical(ical).to_ical).should eq(sorted_ical(ical))
+    end
+
+    it 'handles mulitple EXDATE lines' do
+      schedule = IceCube::Schedule.from_ical ical_string_woth_multiple_exdates
+      schedule.exception_times.count.should == 3
     end
   end
 end
