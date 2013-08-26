@@ -30,12 +30,12 @@ describe IceCube::Rule, 'from_ical' do
 
 	it 'should be able to parse a .day_of_week rule' do
 		rule = IceCube::Rule.from_ical("FREQ=DAILY;BYDAY=-1TU,-2TU")
-    rule.should == IceCube::Rule.daily.day_of_week(:tuesday => [-1, -2])
+		rule.should == IceCube::Rule.daily.day_of_week(:tuesday => [-1, -2])
 	end
   
 	it 'should be able to parse both .day and .day_of_week rules' do
 		rule = IceCube::Rule.from_ical("FREQ=DAILY;BYDAY=MO,-1TU,-2TU")
-    rule.should == IceCube::Rule.daily.day_of_week(:tuesday => [-1, -2]).day(:monday)
+		rule.should == IceCube::Rule.daily.day_of_week(:tuesday => [-1, -2]).day(:monday)
 	end
 
 	it 'should be able to parse a .day_of_month rule' do
@@ -64,7 +64,7 @@ describe IceCube::Rule, 'from_ical' do
 	end
 
 	it 'should be able to parse a rule with an until date' do
-    t = Time.now.utc
+		t = Time.now.utc
 		rule = IceCube::Rule.from_ical("FREQ=WEEKLY;UNTIL=#{t.strftime("%Y%m%dT%H%M%SZ")}")
 		rule.to_s.should == IceCube::Rule.weekly.until(t).to_s
 	end
@@ -74,15 +74,15 @@ describe IceCube::Rule, 'from_ical' do
 		rule.should == IceCube::Rule.weekly.count(5)
 	end
 
-  it 'should be able to parse a rule with an interval' do
-    rule = IceCube::Rule.from_ical("FREQ=DAILY;INTERVAL=2")
-    rule.should == IceCube::Rule.daily.interval(2)
-  end
+	it 'should be able to parse a rule with an interval' do
+		rule = IceCube::Rule.from_ical("FREQ=DAILY;INTERVAL=2")
+		rule.should == IceCube::Rule.daily.interval(2)
+	end
 
-  it 'should be able to parse week start (WKST)' do
-    rule = IceCube::Rule.from_ical("FREQ=WEEKLY;INTERVAL=2;WKST=MO")
-    rule.should == IceCube::Rule.weekly(2, :monday)
-  end
+	it 'should be able to parse week start (WKST)' do
+		rule = IceCube::Rule.from_ical("FREQ=WEEKLY;INTERVAL=2;WKST=MO")
+		rule.should == IceCube::Rule.weekly(2, :monday)
+	end
 
 	it 'test' do
 		schedule = IceCube::Schedule.new(Time.now)
@@ -101,7 +101,7 @@ DTEND:20130314T201545Z
 RRULE:FREQ=WEEKLY;BYDAY=TH;UNTIL=20130531T100000Z
 ICAL
 
-  ical_string_woth_multiple_exdates = <<-ICAL
+  ical_string_with_multiple_exdates = <<-ICAL
 DTSTART;TZID=America/Denver:20130731T143000
 DTEND;TZID=America/Denver:20130731T153000
 RRULE:FREQ=WEEKLY;UNTIL=20140730T203000Z;BYDAY=MO,WE,FR
@@ -345,6 +345,18 @@ ICAL
     end
   end
 
+  context 'tzid' do
+    # **TEST TWO TIMEZONES** The current implementation defaults to local timezone, ignoring tzid.
+    it 'should be able to parse a schedule with a tzid' do
+      t = Time.now.utc
+      eastern_schedule = IceCube::Schedule.from_ical("DTSTART;TZID=America/New_York:#{t.strftime("%Y%m%dT%H%M%S")}")
+      pacific_schedule = IceCube::Schedule.from_ical("DTSTART;TZID=America/Los_Angeles:#{t.strftime("%Y%m%dT%H%M%S")}")
+      eastern_schedule.start_time.should_not eq(pacific_schedule.start_time)
+      eastern_schedule.next_occurrence.to_i.should_not eq(pacific_schedule.next_occurrence.to_i)
+      eastern_schedule.next_occurrence.to_i.should eq(pacific_schedule.next_occurrence.to_i - 3 * 3600)
+    end
+  end
+
 
   context "exceptions" do
     it 'handles single EXDATE lines' do
@@ -359,7 +371,7 @@ ICAL
     end
 
     it 'handles mulitple EXDATE lines' do
-      schedule = IceCube::Schedule.from_ical ical_string_woth_multiple_exdates
+      schedule = IceCube::Schedule.from_ical ical_string_with_multiple_exdates
       schedule.exception_times.count.should == 3
     end
   end
