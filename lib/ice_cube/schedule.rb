@@ -315,15 +315,23 @@ module IceCube
       data = {}
       ical_string.each_line do |line|
         (property, value) = line.split(':')
-        (property, tzid) = property.split(';') 
+        (property, tzid) = property.split(';')
+        # Use the specified TZID to parse times, if possible.
+        if tzid && tzid.start_with?('TZID=')
+          time_context = Time.find_zone(tzid.split('TZID=')[-1])
+        end
+        # Otherwise we use the system default, which should still be correct
+        # for time strings which include offsets or Zulu time flag, or naive
+        # times.
+        time_context ||= Time
         case property
         when 'DTSTART'
-          data[:start_date] = Time.parse(value)
+          data[:start_date] = time_context.parse(value)
         when 'DTEND'
-          data[:end_time] = Time.parse(value)
+          data[:end_time] = time_context.parse(value)
           when 'EXDATE'
           data[:extimes] ||= []
-          data[:extimes] += value.split(',').map{|v| Time.parse(v)}
+          data[:extimes] += value.split(',').map{|v| time_context.parse(v)}
         when 'DURATION'
           data[:duration] # FIXME
         when 'RRULE'
